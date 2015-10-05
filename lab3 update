@@ -1,0 +1,46 @@
+import sqlite3 as lite 
+import os
+import re
+con =None
+
+##Create a folder for the database
+directoryForDB = "/Users/simiao/Documents/Fall 2015/INFSCI 2725/ASSIGNMENT/Assignment 3/database/"## set directory 
+if not os.path.exists(directoryForDB):
+    os.makedirs(directoryForDB)
+    
+directoryForDB = directoryForDB + "movieRating.db"
+con = lite.connect(directoryForDB)
+
+f = open('/Users/simiao/Documents/Fall 2015/INFSCI 2725/ASSIGNMENT/Assignment 3/listexample.txt')
+nameList = list()
+element = []
+newElement = []
+with con:
+    cur = con.cursor()
+    cur.execute("DROP TABLE IF EXISTS movieList")
+    cur.execute("CREATE TABLE movieList(movieName TEXT, movieDate TEXT, movieVote INT, movieRating REAL)")
+    for line in iter(f):
+        line = line.split(") {")
+        line = line[0]
+        line = re.sub(' +',' ',line.strip())
+        line = line.split(" ",3)
+        nameAndDate = line[3].split(" (")
+        name=nameAndDate[0]
+        name=name.replace("'","")
+        name = name.replace('"','')
+        print name
+        date = nameAndDate[1].replace(")","")
+        date = re.sub('\D','',date)
+        voteNum = int(line[1].replace("'",""))
+        ratingNum = float(line[2].replace("'",""))
+        insertStatement= """INSERT INTO movieList VALUES ('%s','%s',%d,%f)""" % (name,date,voteNum,ratingNum)
+        cur.execute(insertStatement)
+    con.commit
+    print name
+    #print line
+    #print nameAndDate
+    #print name
+    #print date
+    #print ratingNum
+    #print voteNum
+        
