@@ -1,0 +1,59 @@
+# -*- coding: utf-8 -*-
+import re
+import sqlite3 as lite
+import os
+import urllib
+ratingWeb = "http://boxnumbertwo.com/MovieData/ratings.list"
+f = urllib.urlopen(ratingWeb)
+nameList = list()
+element = []
+newElement = []
+
+for line in iter(f):
+        line = line.split(") {")
+        line = line[0]
+        line = re.sub(' +',' ',line.strip())
+        line = line.split(" ",3)
+        nameAndDate = line[3].split(" (")
+        name=nameAndDate[0]
+        name=name.replace("'","")
+        name = name.replace('"','')
+        print name
+        date = nameAndDate[1].replace(")","")
+        date = re.sub('\D','',date)
+        voteNum = int(line[1].replace("'",""))
+        ratingNum = float(line[2].replace("'",""))
+        element.append([name,date,voteNum,ratingNum])
+
+#print element[0][0]
+for index in range(len(element)-1):
+    if (element[index][0] == element[index+1][0]):
+        if element[index][2]>element[index+1][2]:
+            element[index+1] = element[index]
+        else:
+            element[index]= element[index+1]
+#print element
+for i in element:
+    if i not in newElement:
+        newElement.append(i)
+print newElement  
+print len(newElement)      
+f.close()
+
+con =None
+
+##Create a folder for the database
+directoryForDB = "/Users/simiao/Documents/Fall 2015/INFSCI 2725/ASSIGNMENT/Assignment 3/databasenew/"## set directory 
+if not os.path.exists(directoryForDB):
+    os.makedirs(directoryForDB)
+    
+directoryForDB = directoryForDB + "movieRating.db"
+con = lite.connect(directoryForDB)
+with con:
+    cur = con.cursor()
+    cur.execute("DROP TABLE IF EXISTS movieList")
+    cur.execute("CREATE TABLE movieList(movieName TEXT, movieDate TEXT, movieVote INT, movieRating REAL)")
+    for index in range(len(newElement)):
+        insertStatement= """INSERT INTO movieList VALUES ('%s','%s',%d,%f)""" % (newElement[index][0],newElement[index][1],newElement[index][2],newElement[index][3])
+        cur.execute(insertStatement)
+    con.commit
