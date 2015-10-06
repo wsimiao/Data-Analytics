@@ -1,0 +1,66 @@
+# -*- coding: utf-8 -*-
+from BeautifulSoup import *
+import urllib
+import os
+import sqlite3 as lite
+import sys
+
+con =None
+directoryForDB = "/Users/simiao/Documents/Fall 2015/INFSCI 2725/ASSIGNMENT/Assignment 3/database/movieRating.db"
+con = lite.connect(directoryForDB)
+
+siteHTML = "http://boxnumbertwo.com/MovieData/budget.html"
+html = urllib.urlopen(siteHTML).read()
+soup = BeautifulSoup(html)
+table = soup.findAll("table")  # type 'list' len(table) = 2   table[0] 是我们想要的表
+table = table[0]
+moviesPB = dict()    # production budget
+moviesDG = dict()    # Domestic Gross
+moviesWG = dict()    # Worldwide Gross
+#print len(table)
+#print type(table) 
+#print table[0]
+#print "and"
+#print table[1]
+table = str(table)
+table = table.split('</tr>\n',1)  # delete the table and heads
+
+table= table[1]
+table = table.split('</tr><tr>\n</tr><tr>')
+#print table[0]
+# output of table[0]:  <tr><td class="data">1</td>
+     #####             <td><a href="/box-office-chart/daily/2009/12/18">12/18/2009</a></td>
+     #####             <td><b><a href="/movie/Avatar#tab=summary">Avatar</a></b></td>
+     ####              <td class="data">$425,000,000</td>
+     ####              <td class="data">$760,507,625</td>
+     ####              <td class="data">$2,783,918,982</td>
+count = 0
+with con:
+    cur = con.cursor()
+    cur.execute("DROP TABLE IF EXISTS movieBudget")
+    cur.execute("CREATE TABLE movieBudget(movieName TEXT, productBudget INT, domesticGross INT, worldWideGross INT, releaseDate TEXT, releaseYear INT, releaseMonth INT )")
+    for element in table:
+        temp = element.split("</td>")
+        date = temp[1].split('">')
+        date = date[1].strip("</a>")   #3/9/2012
+        datetemp = date.split('/')
+        year = int(datetemp[2])
+        month = int(datetemp[0])
+ 
+        name = temp[2].split('summary">')  # get the name  #Avatar</a></b></td>
+        name = name[1].strip('</a></b></td>')
+        PB = temp[3].split('data">$')
+        PB = int(PB[1].replace(',',''))
+        DG = temp[4].split('data">$')
+        DG = int(DG[1].replace(',',''))
+        WG = temp[5].split('data">$')
+        WG = int(WG[1].replace(',',''))
+        print date
+        print year
+        print month
+        print name
+
+        
+        insertStatement= """INSERT INTO movieBudget VALUES ("%s",%d,%d,%d,'%s',%d,%d)""" % (name,PB,DG,WG,date,year,month)
+        cur.execute(insertStatement)
+    con.commit
